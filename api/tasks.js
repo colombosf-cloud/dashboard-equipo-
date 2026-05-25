@@ -21,7 +21,7 @@ function normStatus(s) {
 }
 
 async function fetchWorkspace(brand, wsId, token) {
-  const url = `https://api.clickup.com/api/v2/team/${wsId}/task?order_by=updated&reverse=true&subtasks=true&include_closed=false&page=0`;
+  const url = `https://api.clickup.com/api/v2/team/${wsId}/task?order_by=updated&reverse=true&subtasks=true&include_closed=true&page=0`;
   const res = await fetch(url, {
     headers: { Authorization: token }
   });
