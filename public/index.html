@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Equipo — Tivenos Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F0EC;--surface:#FFF;--surface2:#F8F7F4;
+  --border:rgba(0,0,0,.07);--border-strong:rgba(0,0,0,.13);
+  --text:#1A1916;--muted:#6B6960;--faint:#A8A59C;
+  --radius:10px;--radius-sm:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.09);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
+.logo{font-size:15px;font-weight:600;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:#7F77DD}
+.badge{font-size:11px;font-weight:500;color:var(--muted);background:var(--bg);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+.topbar-r{display:flex;align-items:center;gap:8px}
+.upd{font-size:11px;color:var(--faint);font-family:var(--mono);display:flex;align-items:center;gap:5px}
+.live{width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:12px;font-weight:500;padding:6px 13px;border-radius:var(--radius-sm);border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer;transition:all .13s;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--text);color:#fff;border-color:var(--text)}
+.btn.primary:hover{background:#2e2c28}
+.btn.loading{opacity:.6;pointer-events:none}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.spin{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 54px)}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:1rem .75rem;overflow-y:auto;display:flex;flex-direction:column;gap:1.25rem}
+.content{flex:1;overflow-y:auto;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+
+/* SIDEBAR */
+.fg{display:flex;flex-direction:column;gap:5px}
+.flbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:2px}
+.flt{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--muted);font-family:var(--font);font-size:12px;font-weight:400;cursor:pointer;transition:all .12s;text-align:left;width:100%}
+.flt:hover{background:var(--bg);color:var(--text)}
+.flt.on{background:var(--bg);color:var(--text);font-weight:500}
+.flt .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.flt .av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0}
+.flt .cnt{margin-left:auto;font-size:10px;color:var(--faint);font-family:var(--mono)}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;box-shadow:var(--shadow)}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:5px}
+.kpi-val{font-size:30px;font-weight:600;letter-spacing:-1.5px;line-height:1}
+.kpi-sub{font-size:11px;margin-top:3px;color:var(--faint)}
+
+/* KANBAN */
+.kscroll{overflow-x:auto;padding-bottom:6px}
+.kanban{display:flex;gap:10px;min-width:max-content}
+.kcol{width:215px;flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+.kcol-hdr{display:flex;align-items:center;gap:7px;padding:7px 10px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+.kcol-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.kcol-name{font-size:11px;font-weight:600;flex:1}
+.kcol-ct{font-size:10px;font-family:var(--mono);color:var(--faint);background:var(--bg);padding:2px 6px;border-radius:20px;border:1px solid var(--border)}
+.kcards{display:flex;flex-direction:column;gap:6px;min-height:40px}
+
+.kcard{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--sc,#ccc);border-radius:var(--radius);padding:.625rem .75rem;box-shadow:var(--shadow);transition:box-shadow .15s,transform .15s}
+.kcard:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kcard-name{font-size:11px;font-weight:500;line-height:1.35;margin-bottom:4px}
+.kcard-list{font-size:9px;color:var(--faint);font-family:var(--mono);margin-bottom:5px}
+.kcard-foot{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.bpill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.02em;white-space:nowrap}
+.kavs{display:flex}
+.kav{border:1.5px solid var(--surface);margin-left:-4px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
+.kav:first-child{margin-left:0}
+.kempty{padding:.75rem;text-align:center;font-size:11px;color:var(--faint);background:var(--surface2);border-radius:var(--radius-sm);border:1px dashed var(--border)}
+.kmore{font-size:10px;color:var(--faint);text-align:center;padding:3px;font-family:var(--mono)}
+
+/* subtask grouping */
+.kwrap{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow)}
+.kwrap .kcard{border-radius:0;border:none;border-left:3px solid var(--sc,#ccc);box-shadow:none}
+.kwrap .kcard.sub{border-left-color:transparent;border-top:1px dashed var(--border);background:var(--surface2);padding-left:1.5rem;position:relative}
+.kwrap .kcard.sub::before{content:'↳';position:absolute;left:.5rem;top:.625rem;font-size:10px;color:var(--faint)}
+
+/* priority */
+.prio{font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.04em}
+.prio.urgent{background:#FEEEEE;color:#C33}
+.prio.high{background:#FFF3E0;color:#B06000}
+
+/* BRAND CARDS */
+.brand-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem .875rem;box-shadow:var(--shadow)}
+.bcard-hdr{display:flex;align-items:center;gap:6px;margin-bottom:.5rem}
+.bcard-dot{width:9px;height:9px;border-radius:50%}
+.bcard-name{font-size:12px;font-weight:600}
+.bcard-pct{font-size:26px;font-weight:600;letter-spacing:-1px;line-height:1}
+.bcard-ct{font-size:10px;color:var(--muted);margin-top:1px}
+.bcard-bar{height:4px;background:var(--bg);border-radius:2px;margin-top:.5rem;overflow:hidden}
+.bcard-fill{height:100%;border-radius:2px}
+
+/* COLLAB */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;box-shadow:var(--shadow)}
+.ccard-hdr{display:flex;align-items:center;gap:9px;margin-bottom:.875rem}
+.cav-lg{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.cname{font-size:13px;font-weight:600}
+.ctasks{font-size:10px;color:var(--muted)}
+.bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.bar-lbl{font-size:10px;color:var(--muted);width:52px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.bar-pct{font-size:10px;color:var(--faint);width:30px;text-align:right;font-family:var(--mono);flex-shrink:0}
+
+/* TABLE */
+.ttable{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.trow{display:grid;grid-template-columns:2fr 90px 115px 75px 80px;padding:9px 14px;border-bottom:1px solid var(--border);align-items:center;gap:8px;transition:background .1s}
+.trow.hdr{background:var(--bg);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);border-bottom:1px solid var(--border-strong)}
+.trow:last-child{border-bottom:none}
+.trow:not(.hdr):hover{background:var(--surface2)}
+.trow.tsub{background:var(--surface2);padding-left:2rem}
+.trow.tsub:hover{background:#EEECEA}
+.tname{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.sarrow{color:var(--faint);font-size:11px;flex-shrink:0}
+.spill{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.spill .dot{width:5px;height:5px;border-radius:50%}
+.tdate{font-family:var(--mono);font-size:10px;color:var(--faint)}
+.tavs{display:flex}
+.tav{width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:6.5px;font-weight:700;margin-left:-4px;border:1.5px solid var(--surface)}
+.tav:first-child{margin-left:0}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem}
+.sec-title{font-size:12px;font-weight:600;letter-spacing:-.1px}
+.sec-sub{font-size:11px;color:var(--muted)}
+
+/* LOADING */
+.overlay{position:fixed;inset:0;background:rgba(242,240,236,.88);display:flex;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(4px);flex-direction:column;gap:12px}
+.spinner{width:26px;height:26px;border:2.5px solid var(--border-strong);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite}
+.overlay-txt{font-size:13px;color:var(--muted);font-weight:500}
+
+/* ERROR */
+.error-box{background:#FEF2F2;border:1px solid #FCA5A5;border-radius:var(--radius);padding:1rem 1.25rem;color:#B91C1C;font-size:13px}
+
+@media print{
+  .topbar .btn,.sidebar{display:none!important}
+  .layout{display:block}
+  .content{overflow:visible;padding:0}
+  .kscroll{overflow:visible}
+  .kanban{flex-wrap:wrap;min-width:unset}
+  .kcol{width:175px}
+  body,*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<div id="overlay" class="overlay">
+  <div class="spinner"></div>
+  <div class="overlay-txt" id="overlay-txt">Conectando con ClickUp...</div>
+</div>
+
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo"><span class="logo-dot"></span>Tivenos Group</div>
+    <div class="badge" id="period-lbl">—</div>
+  </div>
+  <div class="topbar-r">
+    <div class="upd" id="upd-el" style="display:none">
+      <div class="live"></div>
+      <span id="upd-txt">—</span>
+    </div>
+    <button class="btn" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir
+    </button>
+    <button class="btn primary" id="refresh-btn" onclick="loadTasks()">
+      <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Actualizar
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="fg">
+      <div class="flbl">Período</div>
+      <button class="flt on" id="r-ant" onclick="setRange('ant',this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Semana anterior
+      </button>
+      <button class="flt" id="r-act" onclick="setRange('act',this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Semana actual
+      </button>
+      <button class="flt" id="r-mes" onclick="setRange('mes',this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Mayo completo
+      </button>
+    </div>
+    <div class="fg"><div class="flbl">Colaborador</div><div id="flt-collab"></div></div>
+    <div class="fg"><div class="flbl">Marca</div><div id="flt-brand"></div></div>
+    <div class="fg"><div class="flbl">Estado</div><div id="flt-status"></div></div>
+    <div class="fg"><div class="flbl">Lista</div><div id="flt-list"></div></div>
+  </aside>
+  <main class="content" id="content"></main>
+</div>
+
+<script>
+const BRANDS = {
+  EBDS:    {dot:'#378ADD',bg:'#EBF4FD',text:'#1A5A99',fill:'#85B7EB'},
+  Sibila:  {dot:'#D4537E',bg:'#FBE9F1',text:'#8F2D52',fill:'#ED93B1'},
+  ZoWeAre: {dot:'#7F77DD',bg:'#EEEDFE',text:'#4A42A0',fill:'#AFA9EC'},
+  BHU:     {dot:'#D85A30',bg:'#FDEDE7',text:'#8B3618',fill:'#F0997B'},
+  Tivenos: {dot:'#1D9E75',bg:'#E2F5EE',text:'#0D6347',fill:'#5DCAA5'}
+};
+const COLLABS = {
+  '112045438':{name:'Stefania',initials:'SP',bg:'#EEEDFE',text:'#4A42A0'},
+  '89265447': {name:'Sofía',   initials:'SC',bg:'#FDEDE7',text:'#8B3618'},
+  '95152256': {name:'Jesús',   initials:'JM',bg:'#E2F5EE',text:'#0D6347'}
+};
+const STATUS_C = {
+  'PLANEANDO':'#B4B2A9','REDACCIÓN':'#EF9F27','DISEÑO':'#7F77DD',
+  'VALIDAR':'#378ADD','RECHAZADO':'#E24B4A','ESPERA EXT.':'#D85A30','HECHO':'#1D9E75'
+};
+const KANBAN_ORDER = ['PLANEANDO','REDACCIÓN','DISEÑO','ESPERA EXT.','VALIDAR','RECHAZADO','HECHO'];
+const ACTIVE_S = ['REDACCIÓN','DISEÑO','VALIDAR','RECHAZADO','ESPERA EXT.','HECHO'];
+
+// STATE
+let TASKS = [];
+let range='ant', fBrand='Todas', fCollab='Todos', fStatus='Todos', fList='Todas';
+
+// DATES
+const TODAY = new Date();
+const DOW = (TODAY.getDay()+6)%7;
+const MON_ACT = new Date(TODAY); MON_ACT.setDate(TODAY.getDate()-DOW); MON_ACT.setHours(0,0,0,0);
+const SUN_ACT = new Date(MON_ACT); SUN_ACT.setDate(MON_ACT.getDate()+6); SUN_ACT.setHours(23,59,59);
+const MON_ANT = new Date(MON_ACT); MON_ANT.setDate(MON_ACT.getDate()-7);
+const SUN_ANT = new Date(MON_ACT); SUN_ANT.setDate(MON_ACT.getDate()-1); SUN_ANT.setHours(23,59,59);
+const MES_S = new Date(TODAY.getFullYear(),TODAY.getMonth(),1).getTime();
+const MES_E = new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0,23,59,59).getTime();
+
+function fmt2(n){return String(n).padStart(2,'0')}
+function fmtRange(s,e){return `${fmt2(s.getDate())}/${fmt2(s.getMonth()+1)} – ${fmt2(e.getDate())}/${fmt2(e.getMonth()+1)}`}
+const MES_NAME = TODAY.toLocaleDateString('es',{month:'long',year:'numeric'});
+const RANGE_LABELS = {
+  ant:`Semana anterior (${fmtRange(MON_ANT,SUN_ANT)})`,
+  act:`Semana actual (${fmtRange(MON_ACT,SUN_ACT)})`,
+  mes:`${MES_NAME.charAt(0).toUpperCase()+MES_NAME.slice(1)} — mes completo`
+};
+
+function inR(due,s,e){return due&&due>=s.getTime()&&due<=e.getTime();}
+function filterByRange(tasks,r){
+  if(r==='ant') return tasks.filter(t=>inR(t.due,MON_ANT,SUN_ANT)||(!t.due&&ACTIVE_S.includes(t.statusUI)));
+  if(r==='act') return tasks.filter(t=>inR(t.due,MON_ACT,SUN_ACT)||(!t.due&&ACTIVE_S.includes(t.statusUI)));
+  return tasks; // mes = todo
+}
+function fmtDate(ts){
+  if(!ts) return '—';
+  return new Date(ts).toLocaleDateString('es',{day:'2-digit',month:'2-digit'});
+}
+
+// HTML HELPERS
+function avHTML(id,size){
+  const c=COLLABS[id];if(!c)return '';
+  const fs=Math.round(size*.36);
+  return `<span class="kav" style="width:${size}px;height:${size}px;background:${c.bg};color:${c.text};font-size:${fs}px">${c.initials}</span>`;
+}
+function bPill(brand){
+  const b=BRANDS[brand]||{bg:'#eee',text:'#666'};
+  return `<span class="bpill" style="background:${b.bg};color:${b.text}">${brand}</span>`;
+}
+function sPill(s){
+  const c=STATUS_C[s]||'#ccc';
+  return `<span class="spill" style="background:${c}18;color:${c}"><span class="dot" style="background:${c}"></span>${s}</span>`;
+}
+function prioBadge(p){
+  if(!p||p==='normal')return '';
+  return `<span class="prio ${p}">${p==='urgent'?'urgente':'alta'}</span>`;
+}
+
+// FETCH
+async function loadTasks(){
+  const btn=document.getElementById('refresh-btn');
+  const icon=document.getElementById('refresh-icon');
+  btn.classList.add('loading');
+  icon.classList.add('spin');
+  document.getElementById('overlay').style.display='flex';
+  document.getElementById('overlay-txt').textContent='Cargando tareas de ClickUp...';
+  try {
+    const res = await fetch('/api/tasks');
+    if(!res.ok) throw new Error(`Error ${res.status}`);
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    TASKS = data.tasks;
+    const now = new Date(data.fetchedAt);
+    document.getElementById('upd-txt').textContent =
+      `Actualizado ${now.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})} ${now.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}`;
+    document.getElementById('upd-el').style.display='flex';
+    buildSidebar();
+    render();
+  } catch(e) {
+    document.getElementById('content').innerHTML=
+      `<div class="error-box">⚠️ No se pudo cargar ClickUp: ${e.message}</div>`;
+  } finally {
+    document.getElementById('overlay').style.display='none';
+    btn.classList.remove('loading');
+    icon.classList.remove('spin');
+  }
+}
+
+// SIDEBAR
+function buildSidebar(){
+  const fc=document.getElementById('flt-collab');
+  fc.innerHTML=`<button class="flt on" onclick="setF('collab','Todos',this)">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+    Todos<span class="cnt" id="cc-todos"></span></button>`
+  +Object.entries(COLLABS).map(([id,c])=>`
+    <button class="flt" onclick="setF('collab','${c.name}',this)">
+      <span class="av" style="background:${c.bg};color:${c.text}">${c.initials}</span>
+      ${c.name}<span class="cnt" id="cc-${id}"></span></button>`).join('');
+
+  const fb=document.getElementById('flt-brand');
+  fb.innerHTML=`<button class="flt on" onclick="setF('brand','Todas',this)">
+    <span class="dot" style="background:var(--faint)"></span>Todas<span class="cnt" id="cb-todas"></span></button>`
+  +Object.entries(BRANDS).map(([b,bc])=>`
+    <button class="flt" onclick="setF('brand','${b}',this)">
+      <span class="dot" style="background:${bc.dot}"></span>${b}<span class="cnt" id="cb-${b}"></span></button>`).join('');
+
+  const fs=document.getElementById('flt-status');
+  fs.innerHTML=`<button class="flt on" onclick="setF('status','Todos',this)">
+    <span class="dot" style="background:var(--faint)"></span>Todos</button>`
+  +KANBAN_ORDER.map(s=>`
+    <button class="flt" onclick="setF('status','${s}',this)">
+      <span class="dot" style="background:${STATUS_C[s]}"></span>${s}</button>`).join('');
+
+  const fl=document.getElementById('flt-list');
+  const lists=[...new Set(TASKS.map(t=>t.list).filter(Boolean))].sort();
+  fl.innerHTML=`<button class="flt on" onclick="setF('list','Todas',this)">
+    <span class="dot" style="background:var(--faint)"></span>Todas</button>`
+  +lists.map(l=>`
+    <button class="flt" onclick="setF('list','${l}',this)">
+      <span class="dot" style="background:var(--faint)"></span>${l}</button>`).join('');
+}
+
+function getFiltered(){
+  let t=filterByRange(TASKS,range);
+  if(fBrand!=='Todas') t=t.filter(x=>x.brand===fBrand);
+  if(fCollab!=='Todos'){
+    const cid=Object.entries(COLLABS).find(([,v])=>v.name===fCollab)?.[0];
+    if(cid) t=t.filter(x=>x.assignees.includes(cid));
+  }
+  if(fStatus!=='Todos') t=t.filter(x=>x.statusUI===fStatus);
+  if(fList!=='Todas') t=t.filter(x=>x.list===fList);
+  return t;
+}
+
+function updateCounts(){
+  const base=getFiltered();
+  const cc=document.getElementById('cc-todos');if(cc)cc.textContent=base.length;
+  Object.entries(COLLABS).forEach(([id])=>{
+    const el=document.getElementById(`cc-${id}`);
+    if(el)el.textContent=base.filter(t=>t.assignees.includes(id)).length;
+  });
+  const cbt=document.getElementById('cb-todas');if(cbt)cbt.textContent=base.length;
+  Object.keys(BRANDS).forEach(b=>{
+    const el=document.getElementById(`cb-${b}`);
+    if(el)el.textContent=base.filter(t=>t.brand===b).length;
+  });
+}
+
+// RENDER
+function render(){
+  document.getElementById('period-lbl').textContent=RANGE_LABELS[range];
+  updateCounts();
+  const tasks=getFiltered();
+  const total=tasks.length;
+  const validar=tasks.filter(t=>t.statusUI==='VALIDAR').length;
+  const enProc=tasks.filter(t=>['REDACCIÓN','DISEÑO'].includes(t.statusUI)).length;
+  const espera=tasks.filter(t=>t.statusUI==='ESPERA EXT.').length;
+  const rechazadas=tasks.filter(t=>t.statusUI==='RECHAZADO').length;
+
+  document.getElementById('content').innerHTML=
+    renderKPIs(total,enProc,validar,espera,rechazadas)+
+    renderKanban(tasks)+
+    renderBrands()+
+    renderCollabs()+
+    renderTable(tasks);
+}
+
+function renderKPIs(total,enProc,validar,espera,rechazadas){
+  return `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total tareas</div><div class="kpi-val">${total}</div><div class="kpi-sub">en el período</div></div>
+    <div class="kpi"><div class="kpi-lbl">En progreso</div><div class="kpi-val" style="color:#7F77DD">${enProc}</div><div class="kpi-sub" style="color:#7F77DD">diseño + redacción</div></div>
+    <div class="kpi"><div class="kpi-lbl">Por validar</div><div class="kpi-val" style="color:#378ADD">${validar}</div><div class="kpi-sub" style="color:var(--faint)">pendientes aprobación</div></div>
+    <div class="kpi"><div class="kpi-lbl">Espera externa</div><div class="kpi-val" style="color:#D85A30">${espera}</div><div class="kpi-sub" style="color:var(--faint)">bloqueadas</div></div>
+  </div>`;
+}
+
+function renderKanban(tasks){
+  let cols='';
+  KANBAN_ORDER.forEach(status=>{
+    const col=tasks.filter(t=>t.statusUI===status);
+    const c=STATUS_C[status];
+    let cards='';
+    if(!col.length){
+      cards=`<div class="kempty">Sin tareas</div>`;
+    } else {
+      const parents=col.filter(t=>!t.parent);
+      const orphans=col.filter(t=>t.parent&&!col.find(p=>p.id===t.parent));
+      const card=(t,sub)=>{
+        const avs=t.assignees.slice(0,3).map(id=>avHTML(id,18)).join('');
+        return `<div class="kcard${sub?' sub':''}" style="--sc:${c}">
+          <div class="kcard-name">${t.name}</div>
+          <div class="kcard-list">${t.list}</div>
+          <div class="kcard-foot">
+            ${bPill(t.brand)}
+            <div style="display:flex;align-items:center;gap:3px">
+              ${t.priority&&t.priority!=='normal'?prioBadge(t.priority):''}
+              ${t.due?`<span style="font-size:9px;color:var(--faint);font-family:var(--mono)">${fmtDate(t.due)}</span>`:''}
+            </div>
+            <div class="kavs">${avs}</div>
+          </div>
+        </div>`;
+      };
+      const vis=parents.slice(0,8);
+      vis.forEach(p=>{
+        const subs=col.filter(t=>t.parent===p.id);
+        if(subs.length){
+          cards+=`<div class="kwrap" style="--sc:${c}">${card(p,false)}${subs.map(s=>card(s,true)).join('')}</div>`;
+        } else {
+          cards+=card(p,false);
+        }
+      });
+      orphans.slice(0,3).forEach(s=>{cards+=card(s,true);});
+      const extra=col.length-vis.length;
+      if(extra>0) cards+=`<div class="kmore">+${extra} más</div>`;
+    }
+    cols+=`<div class="kcol">
+      <div class="kcol-hdr"><div class="kcol-dot" style="background:${c}"></div><div class="kcol-name">${status}</div><div class="kcol-ct">${col.length}</div></div>
+      <div class="kcards">${cards}</div>
+    </div>`;
+  });
+  return `<div>
+    <div class="sec-hdr"><div class="sec-title">Kanban de tareas</div><div class="sec-sub">con subtareas anidadas · scroll horizontal</div></div>
+    <div class="kscroll"><div class="kanban">${cols}</div></div>
+  </div>`;
+}
+
+function renderBrands(){
+  const total=TASKS.length||1;
+  const cards=Object.entries(BRANDS).map(([b,bc])=>{
+    const cnt=TASKS.filter(t=>t.brand===b).length;
+    const pct=Math.round(cnt/total*100);
+    return `<div class="bcard">
+      <div class="bcard-hdr"><div class="bcard-dot" style="background:${bc.dot}"></div><div class="bcard-name">${b}</div></div>
+      <div class="bcard-pct" style="color:${bc.dot}">${pct}%</div>
+      <div class="bcard-ct">${cnt} tareas</div>
+      <div class="bcard-bar"><div class="bcard-fill" style="width:${pct}%;background:${bc.fill}"></div></div>
+    </div>`;
+  }).join('');
+  return `<div>
+    <div class="sec-hdr"><div class="sec-title">Distribución por marca</div><div class="sec-sub">total de tareas activas</div></div>
+    <div class="brand-grid">${cards}</div>
+  </div>`;
+}
+
+function renderCollabs(){
+  const cards=Object.entries(COLLABS).map(([cid,c])=>{
+    let ct=TASKS.filter(t=>t.assignees.includes(cid));
+    if(fBrand!=='Todas') ct=ct.filter(t=>t.brand===fBrand);
+    const tot=ct.length;
+    const bars=Object.entries(BRANDS).map(([b,bc])=>{
+      const n=ct.filter(t=>t.brand===b).length;
+      if(!n)return '';
+      const p=tot>0?Math.round(n/tot*100):0;
+      return `<div class="bar-row">
+        <span class="bar-lbl">${b}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${bc.fill}"></div></div>
+        <span class="bar-pct">${p}%</span>
+      </div>`;
+    }).join('');
+    return `<div class="ccard">
+      <div class="ccard-hdr">
+        <div class="cav-lg" style="background:${c.bg};color:${c.text}">${c.initials}</div>
+        <div><div class="cname">${c.name}</div><div class="ctasks">${tot} tareas asignadas</div></div>
+      </div>
+      ${bars||'<div style="font-size:11px;color:var(--faint)">Sin tareas</div>'}
+    </div>`;
+  }).join('');
+  return `<div>
+    <div class="sec-hdr"><div class="sec-title">Dedicación por colaborador</div><div class="sec-sub">% por marca</div></div>
+    <div class="cgrid">${cards}</div>
+  </div>`;
+}
+
+function renderTable(tasks){
+  if(!tasks.length) return `<div class="ttable"><div style="padding:2rem;text-align:center;color:var(--faint);font-size:12px">Sin tareas para los filtros seleccionados.</div></div>`;
+  const parents=tasks.filter(t=>!t.parent);
+  const orphans=tasks.filter(t=>t.parent&&!tasks.find(p=>p.id===t.parent));
+  const row=(t,sub)=>{
+    const avs=t.assignees.slice(0,3).map(id=>{
+      const c=COLLABS[id];return c?`<span class="tav" style="background:${c.bg};color:${c.text}">${c.initials}</span>`:''
+    }).join('');
+    return `<div class="trow${sub?' tsub':''}">
+      <div class="tname">${sub?'<span class="sarrow">↳</span>':''}${t.name}${t.priority&&t.priority!=='normal'?' '+prioBadge(t.priority):''}</div>
+      <div>${bPill(t.brand)}</div>
+      <div>${sPill(t.statusUI)}</div>
+      <div class="tavs">${avs}</div>
+      <div class="tdate">${fmtDate(t.due)}</div>
+    </div>`;
+  };
+  let rows='';
+  parents.forEach(p=>{
+    rows+=row(p,false);
+    tasks.filter(t=>t.parent===p.id).forEach(s=>{rows+=row(s,true);});
+  });
+  orphans.forEach(s=>{rows+=row(s,true);});
+  return `<div>
+    <div class="sec-hdr"><div class="sec-title">Listado de tareas</div><div class="sec-sub">${tasks.length} tareas</div></div>
+    <div class="ttable">
+      <div class="trow hdr"><div>Tarea</div><div>Marca</div><div>Estado</div><div>Equipo</div><div>Vence</div></div>
+      ${rows}
+    </div>
+  </div>`;
+}
+
+// CONTROLS
+window.setRange=function(r,el){
+  range=r;
+  document.querySelectorAll('.sidebar .flt[id^=r-]').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  render();
+};
+window.setF=function(type,val,el){
+  if(type==='collab')fCollab=val;
+  if(type==='brand')fBrand=val;
+  if(type==='status')fStatus=val;
+  if(type==='list')fList=val;
+  el.closest('.fg').querySelectorAll('.flt').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  render();
+};
+
+loadTasks();
+</script>
+</body>
+</html>
