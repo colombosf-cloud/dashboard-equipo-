@@ -21,14 +21,20 @@ function normStatus(s) {
 }
 
 async function fetchWorkspace(brand, wsId, token) {
-  const url = `https://api.clickup.com/api/v2/team/${wsId}/task?order_by=updated&reverse=true&subtasks=true&include_closed=true&page=0`;
+  // Primer y último día del mes actual en millisegundos
+  const now = new Date();
+  const mesStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const mesEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).getTime();
+
+  const url = `https://api.clickup.com/api/v2/team/${wsId}/task?order_by=updated&reverse=true&subtasks=true&include_closed=true&date_updated_gt=${mesStart}&date_updated_lt=${mesEnd}&page=0`;
+  
   const res = await fetch(url, {
     headers: { Authorization: token }
   });
   if (!res.ok) throw new Error(`ClickUp error ${res.status} para ${brand}`);
   const data = await res.json();
   return (data.tasks || [])
-    .filter(t => !t.name.startsWith('🤖')) // filtrar bots
+    .filter(t => !t.name.startsWith('🤖'))
     .map(t => ({
       id: t.id,
       name: t.name,
