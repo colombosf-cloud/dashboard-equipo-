@@ -200,6 +200,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   .sidebar{
     position:fixed;left:0;top:var(--topbar-h);bottom:0;
     transform:translateX(-100%);box-shadow:var(--shadow-md);
+    .kanban{grid-template-columns:repeat(3,1fr)}
   }
   .sidebar.open{transform:translateX(0)}
   .sidebar-overlay.open{display:block}
@@ -215,6 +216,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   .brand-grid{grid-template-columns:repeat(2,1fr)}
   .trow{grid-template-columns:1fr 90px}
   .trow div:nth-child(2){display:none}
+  .kanban{grid-template-columns:repeat(2,1fr)}
 }
 @media print{
   .topbar .btn,.sidebar,.ham,.sidebar-overlay{display:none!important}
