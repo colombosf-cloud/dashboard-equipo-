@@ -312,6 +312,10 @@ const PLAYERS = [
   {n:15,fl:'🇩🇪',nm:'Jamal Musiala',tm:'Alemania · Bayern',rol:'Mediapunta',sc:8.6,rc_class:'role-mf'},
 ];
 
+const MASTER_KEY = '$2a$10$DlvfLgypON0S8yXHDwQoJumgPx5UJaffjyS7lo.FRw.fKXV9XMLXW';
+const BIN_NAME = 'mundial2026-prode-sofia';
+const BASE = 'https://api.jsonbin.io/v3';
+let binId = null;
 let scores = {};
 let saveTimeout = null;
 
@@ -321,22 +325,51 @@ function setStatus(msg, type) {
   el.className = 'status-' + type;
 }
 
+async function jbFetch(path, opts = {}) {
+  const r = await fetch(BASE + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY, ...(opts.headers || {}) },
+  });
+  if (!r.ok) throw new Error('JSONBin ' + r.status);
+  return r.json();
+}
+
+async function ensureBin() {
+  if (binId) return binId;
+  const cached = localStorage.getItem('m26_bin');
+  if (cached) { binId = cached; return binId; }
+  // Buscar bin existente por nombre (funciona en todos los dispositivos)
+  try {
+    const list = await jbFetch('/b');
+    const bins = Array.isArray(list) ? list : (list.bins || []);
+    const found = bins.find(b => (b.metadata?.name || b.name) === BIN_NAME);
+    if (found) {
+      binId = found.metadata?.id || found.id;
+      localStorage.setItem('m26_bin', binId);
+      return binId;
+    }
+  } catch (_) {}
+  // Primera vez: crear el bin
+  const data = await jbFetch('/b', {
+    method: 'POST',
+    headers: { 'X-Bin-Name': BIN_NAME, 'X-Private': 'true' },
+    body: JSON.stringify({ scores: {}, lastSaved: '', version: 1 }),
+  });
+  binId = data.metadata.id;
+  localStorage.setItem('m26_bin', binId);
+  return binId;
+}
+
 async function initStorage() {
   setStatus('⏳ Cargando resultados...', 'loading');
   try {
-    const res = await fetch('/api/mundial');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    scores = data.scores || {};
-    if (data._setup) {
-      setStatus('⚙️ ' + data._setup, 'err');
-    } else {
-      const ts = data.lastSaved || 'nunca';
-      setStatus('✓ Datos cargados — último guardado: ' + ts, 'ok');
-    }
+    const id = await ensureBin();
+    const data = await jbFetch('/b/' + id + '/latest');
+    scores = data.record?.scores || {};
+    const ts = data.record?.lastSaved || 'nunca';
+    setStatus('✓ Datos cargados — último guardado: ' + ts, 'ok');
   } catch (e) {
-    setStatus('⚠️ Sin conexión: ' + e.message + ' — los cambios no se guardarán', 'err');
+    setStatus('⚠️ Sin conexión — los cambios no se guardarán', 'err');
   }
   renderRealidad();
   updateCounters();
@@ -346,37 +379,26 @@ async function saveScores() {
   clearTimeout(saveTimeout);
   const btn = document.getElementById('save-btn');
   const msg = document.getElementById('save-msg');
-  btn.disabled = true;
-  btn.textContent = '⏳ Guardando...';
-  msg.style.color = 'var(--gold)';
-  msg.textContent = 'Guardando en la nube...';
-
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  msg.style.color = 'var(--gold)'; msg.textContent = 'Guardando en la nube...';
   MATCHES.forEach(m => {
     const h = document.getElementById('rh_' + m.id);
     const a = document.getElementById('ra_' + m.id);
     if (h && a) scores[m.id] = { h: h.value, a: a.value };
   });
-
   const now = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
   try {
-    const res = await fetch('/api/mundial', {
+    const id = await ensureBin();
+    await jbFetch('/b/' + id, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scores, lastSaved: now, version: 1 }),
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    msg.style.color = 'var(--green)';
-    msg.textContent = '✓ Guardado — ' + now;
+    msg.style.color = 'var(--green)'; msg.textContent = '✓ Guardado — ' + now;
     setStatus('✓ Último guardado: ' + now, 'ok');
   } catch (e) {
-    msg.style.color = 'var(--red)';
-    msg.textContent = '✗ Error: ' + e.message;
+    msg.style.color = 'var(--red)'; msg.textContent = '✗ Error: ' + e.message;
   }
-
-  btn.disabled = false;
-  btn.textContent = '💾 Guardar ahora';
+  btn.disabled = false; btn.textContent = '💾 Guardar ahora';
   setTimeout(() => { if (msg.style.color !== 'var(--red)') msg.textContent = ''; }, 4000);
   updateCounters();
 }
