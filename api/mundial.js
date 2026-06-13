@@ -1,11 +1,16 @@
+const MASTER_KEY = '$2a$10$DlvfLgypON0S8yXHDwQoJumgPx5UJaffjyS7lo.FRw.fKXV9XMLXW';
+const BIN_NAME = 'mundial2026-prode-sofia';
 const BASE = 'https://api.jsonbin.io/v3';
+
+// Cached across warm serverless invocations
+let cachedBinId = null;
 
 async function jbFetch(path, opts = {}) {
   const r = await fetch(`${BASE}${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',
-      'X-Master-Key': process.env.JSONBIN_MASTER_KEY,
+      'X-Master-Key': MASTER_KEY,
       ...(opts.headers || {}),
     },
   });
@@ -16,6 +21,35 @@ async function jbFetch(path, opts = {}) {
   return r.json();
 }
 
+async function ensureBinId() {
+  if (cachedBinId) return cachedBinId;
+
+  // Try to find the existing bin by listing all bins
+  try {
+    const list = await jbFetch('/b');
+    const bins = Array.isArray(list) ? list : (list.bins || []);
+    const found = bins.find(b => {
+      const name = b.metadata?.name || b.name || b.record?.name;
+      return name === BIN_NAME;
+    });
+    if (found) {
+      cachedBinId = found.metadata?.id || found.id || found.record?.id;
+      return cachedBinId;
+    }
+  } catch (_) {
+    // listing failed, will create a new bin
+  }
+
+  // Create the bin on first ever use
+  const data = await jbFetch('/b', {
+    method: 'POST',
+    headers: { 'X-Bin-Name': BIN_NAME, 'X-Private': 'true' },
+    body: JSON.stringify({ scores: {}, lastSaved: '', version: 1 }),
+  });
+  cachedBinId = data.metadata.id;
+  return cachedBinId;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
@@ -23,36 +57,15 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const masterKey = process.env.JSONBIN_MASTER_KEY;
-  if (!masterKey) {
-    return res.status(503).json({ error: 'JSONBIN_MASTER_KEY no configurado en Vercel' });
-  }
-
-  const binId = process.env.JSONBIN_BIN_ID;
-
   try {
     if (req.method === 'GET') {
-      if (!binId) {
-        const data = await jbFetch('/b', {
-          method: 'POST',
-          headers: { 'X-Bin-Name': 'mundial2026-prode', 'X-Private': 'true' },
-          body: JSON.stringify({ scores: {}, lastSaved: '', version: 1 }),
-        });
-        const newId = data.metadata.id;
-        return res.status(200).json({
-          scores: {},
-          lastSaved: '',
-          _setup: `Bin creado. Agrega JSONBIN_BIN_ID=${newId} en Variables de Entorno de Vercel y redeploya.`,
-        });
-      }
+      const binId = await ensureBinId();
       const data = await jbFetch(`/b/${binId}/latest`);
       return res.status(200).json(data.record);
     }
 
     if (req.method === 'PUT') {
-      if (!binId) {
-        return res.status(503).json({ error: 'JSONBIN_BIN_ID no configurado — leé el status bar.' });
-      }
+      const binId = await ensureBinId();
       await jbFetch(`/b/${binId}`, {
         method: 'PUT',
         body: JSON.stringify(req.body),
