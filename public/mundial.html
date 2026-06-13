@@ -334,22 +334,35 @@ async function jbFetch(path, opts = {}) {
   return r.json();
 }
 
+function getBinFromHash() {
+  try { return new URLSearchParams(window.location.hash.slice(1)).get('bin'); } catch(_) { return null; }
+}
+
+function setBinInHash(id) {
+  history.replaceState({}, '', window.location.pathname + window.location.search + '#bin=' + id);
+}
+
 async function ensureBin() {
   if (binId) return binId;
+  // 1. Leer desde el hash de la URL (#bin=xxxx) — funciona cross-device
+  const hashBin = getBinFromHash();
+  if (hashBin) { binId = hashBin; localStorage.setItem('m26_bin', binId); return binId; }
+  // 2. Leer desde localStorage (mismo navegador)
   const cached = localStorage.getItem('m26_bin');
-  if (cached) { binId = cached; return binId; }
-  // Buscar bin existente por nombre (funciona en todos los dispositivos)
+  if (cached) { binId = cached; setBinInHash(binId); return binId; }
+  // 3. Buscar bin existente por nombre
   try {
     const list = await jbFetch('/b');
     const bins = Array.isArray(list) ? list : (list.bins || []);
-    const found = bins.find(b => (b.metadata?.name || b.name) === BIN_NAME);
+    const found = bins.find(b => b.metadata?.name === BIN_NAME || b.name === BIN_NAME);
     if (found) {
       binId = found.metadata?.id || found.id;
       localStorage.setItem('m26_bin', binId);
+      setBinInHash(binId);
       return binId;
     }
   } catch (_) {}
-  // Primera vez: crear el bin
+  // 4. Primera vez: crear el bin
   const data = await jbFetch('/b', {
     method: 'POST',
     headers: { 'X-Bin-Name': BIN_NAME, 'X-Private': 'true' },
@@ -357,6 +370,7 @@ async function ensureBin() {
   });
   binId = data.metadata.id;
   localStorage.setItem('m26_bin', binId);
+  setBinInHash(binId);
   return binId;
 }
 
@@ -367,7 +381,7 @@ async function initStorage() {
     const data = await jbFetch('/b/' + id + '/latest');
     scores = data.record?.scores || {};
     const ts = data.record?.lastSaved || 'nunca';
-    setStatus('✓ Datos cargados — último guardado: ' + ts, 'ok');
+    setStatus('✓ Datos cargados — último guardado: ' + ts + ' · 📋 ' + window.location.href, 'ok');
   } catch (e) {
     setStatus('⚠️ Sin conexión — los cambios no se guardarán', 'err');
   }
